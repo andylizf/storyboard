@@ -8,7 +8,7 @@ METRICS = [
     # metrics.FalsePositives(name="fp"),
     # metrics.TrueNegatives(name="tn"),
     # metrics.FalseNegatives(name="fn"),
-    metrics.BinaryAccuracy(name="accuracy"),
+    "acc",
     # metrics.Precision(name="precision"),
     # metrics.Recall(name="recall"),
     # metrics.AUC(name="auc"),
@@ -18,20 +18,20 @@ METRICS = [
 
 WIDTH = 224
 HEIGHT = 224
-LENGTH = 5
+LENGTH = 7
 
 
 def make_model(output_bias=None):
     if output_bias is not None:
         output_bias = tf.keras.initializers.Constant(output_bias)
 
-    vgg = applications.MobileNet(include_top=False, input_shape=(224, 224, 3))
+    convnet = applications.MobileNet(include_top=False, input_shape=(224, 224, 3))
     model = Sequential(
         [
-            layers.TimeDistributed(vgg, input_shape=(LENGTH, 224, 224, 3)),
+            layers.TimeDistributed(convnet, input_shape=(LENGTH, 224, 224, 3)),
             layers.TimeDistributed(layers.Flatten()),
-            layers.GRU(64, activation=layers.LeakyReLU(), return_sequences=False),
-            layers.Dense(32, activation=layers.LeakyReLU()),
+            layers.GRU(128, activation=layers.LeakyReLU(), return_sequences=False),
+            layers.Dense(64, activation=layers.LeakyReLU()),
             layers.Dropout(0.5),
             layers.Dense(32, activation=layers.LeakyReLU()),
             layers.Dropout(0.5),
