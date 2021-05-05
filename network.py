@@ -3,17 +3,16 @@ from tensorflow.keras import *
 import tensorflow_addons as tfa
 
 METRICS = [
-    # tfa.metrics.MatthewsCorrelationCoefficient(num_classes=2, name="mcc"),
-    # tfa.metrics.CohenKappa(num_classes=2),
+    tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name="mcc"),
     metrics.TruePositives(name="tp"),
     metrics.FalsePositives(name="fp"),
     metrics.TrueNegatives(name="tn"),
     metrics.FalseNegatives(name="fn"),
     "acc",
-    # metrics.Precision(name="precision"),
-    # metrics.Recall(name="recall"),
-    # metrics.AUC(name="auc"),
-    # metrics.AUC(name="prc", curve="PR"),  # precision-recall curve
+    metrics.Precision(name="precision"),
+    metrics.Recall(name="recall"),
+    metrics.AUC(name="auc"),
+    metrics.AUC(name="prc", curve="PR"),  # precision-recall curve
 ]
 
 
