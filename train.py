@@ -93,7 +93,7 @@ val_ds = dataset.take(int(total * 0.3))
 train_ds = dataset.skip(int(total * 0.3))
 
 _EPOCHS = 5
-_BATCH_SIZE = 4
+_BATCH_SIZE = 2
 
 print("batching...")
 

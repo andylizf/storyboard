@@ -3,12 +3,12 @@ from tensorflow.keras import *
 import tensorflow_addons as tfa
 
 METRICS = [
-    tfa.metrics.MatthewsCorrelationCoefficient(num_classes=2, name="mcc"),
-    tfa.metrics.CohenKappa(num_classes=2),
-    # metrics.TruePositives(name="tp"),
-    # metrics.FalsePositives(name="fp"),
-    # metrics.TrueNegatives(name="tn"),
-    # metrics.FalseNegatives(name="fn"),
+    # tfa.metrics.MatthewsCorrelationCoefficient(num_classes=2, name="mcc"),
+    # tfa.metrics.CohenKappa(num_classes=2),
+    metrics.TruePositives(name="tp"),
+    metrics.FalsePositives(name="fp"),
+    metrics.TrueNegatives(name="tn"),
+    metrics.FalseNegatives(name="fn"),
     "acc",
     # metrics.Precision(name="precision"),
     # metrics.Recall(name="recall"),
@@ -36,7 +36,7 @@ def make_model(output_bias=None):
             layers.Dropout(0.5),
             layers.Dense(32, activation=layers.LeakyReLU()),
             layers.Dropout(0.5),
-            layers.Dense(1, bias_initializer=output_bias),
+            layers.Dense(1, activation="sigmoid", bias_initializer=output_bias),
         ]
     )
     model.summary()
