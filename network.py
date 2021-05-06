@@ -30,7 +30,7 @@ def make_model(output_bias=None):
         [
             layers.TimeDistributed(convnet, input_shape=(LENGTH, 224, 224, 3)),
             layers.TimeDistributed(layers.Flatten()),
-            layers.GRU(128, activation=layers.LeakyReLU(), return_sequences=False),
+            layers.GRU(64, return_sequences=False),
             layers.Dense(64, activation=layers.LeakyReLU()),
             layers.Dropout(0.5),
             layers.Dense(32, activation=layers.LeakyReLU()),
