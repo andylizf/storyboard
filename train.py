@@ -10,7 +10,7 @@ from network import *
 from preprocess import DataProject, datas
 import matplotlib.pyplot as plt
 import numpy as np
-from threading import Thread, Lock
+from threading import Thread, Lock, currentThread
 from tensorflow.math import argmax
 
 
@@ -52,7 +52,9 @@ def gen_ds(proj):
     loc_label1 = len(cut)
     loc_label0 = loc_total - loc_label1
 
-    print(f"name: {Thread.name}, local_total: {loc_total}")
+    print(
+        f"name: {currentThread().getName()}, local_total: {loc_total}, local_label1: {loc_label1}, local_label0: {loc_label0}"
+    )
 
     with lock:
         paths += loc_paths
@@ -64,7 +66,7 @@ def gen_ds(proj):
 
 
 threads = []
-for proj in datas:
+for proj in datas[1:2]:
     t = Thread(target=gen_ds, args=(proj,), name=proj.path.name)
     threads.append(t)
     t.start()
@@ -81,24 +83,23 @@ label_ds = tf.data.Dataset.from_tensor_slices(labels)
 
 print("standlizing the dataset...")
 
+_BATCH_SIZE = 2
+
 dataset = (
     tf.data.Dataset.zip((image_ds, label_ds))
     .batch(LENGTH, drop_remainder=True)
     .map(lambda x, y: (x, argmax(y) != 0 and argmax(y) != LENGTH - 1))
+    .batch(_BATCH_SIZE, drop_remainder=True)
 )
 
 print(f"total: {total}, label1: {label1}, label0: {label0}")
 
-val_ds = dataset.take(int(total * 0.3))
-train_ds = dataset.skip(int(total * 0.3))
+val_ds = dataset.take(int(total / _BATCH_SIZE * 0.3))
+train_ds = dataset.skip(int(total / _BATCH_SIZE * 0.3))
 
 _EPOCHS = 5
-_BATCH_SIZE = 2
 
 print("batching...")
-
-train_ds = train_ds.batch(_BATCH_SIZE, drop_remainder=True)
-val_ds = val_ds.batch(_BATCH_SIZE, drop_remainder=True)
 
 print(train_ds)
 print(val_ds)
