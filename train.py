@@ -13,17 +13,6 @@ import numpy as np
 from threading import Thread, Lock, currentThread
 from tensorflow.math import argmax
 
-
-def to_image(path):
-    image = tf.io.read_file(path)
-
-    image = tf.image.decode_jpeg(image, channels=3)
-    image = tf.image.resize(image, [WIDTH, HEIGHT])
-    image /= 255.0
-
-    return image
-
-
 label0 = 0
 label1 = 0
 total = 0
@@ -45,10 +34,11 @@ def gen_ds(proj):
     loc_paths = [str(p) for p in proj.flows.glob("**/*.jpg")]
 
     loc_labels = np.zeros(len(loc_paths)).astype(np.bool)
-    cut = np.loadtxt(proj.txt).astype(np.int16)
-    loc_labels[cut] = True
+    cut = np.loadtxt(proj.txt).astype(np.int16)[1:]
+    f = lambda x: x - 1
+    loc_labels[f(cut)] = True
 
-    loc_total = len(loc_paths) / LENGTH
+    loc_total = len(loc_paths)
     loc_label1 = len(cut)
     loc_label0 = loc_total - loc_label1
 
@@ -76,6 +66,17 @@ for t in threads:
 
 print("constructing the dataset...")
 
+
+def to_image(path):
+    image = tf.io.read_file(path)
+
+    image = tf.image.decode_jpeg(image, channels=3)
+    image = tf.image.resize(image, [WIDTH, HEIGHT])
+    image /= 255.0
+
+    return image
+
+
 path_ds = tf.data.Dataset.from_tensor_slices(paths)
 image_ds = path_ds.map(to_image)
 
@@ -87,17 +88,19 @@ _BATCH_SIZE = 2
 
 dataset = (
     tf.data.Dataset.zip((image_ds, label_ds))
-    .batch(LENGTH, drop_remainder=True)
-    .map(lambda x, y: (x, argmax(y) != 0 and argmax(y) != LENGTH - 1))
-    .batch(_BATCH_SIZE, drop_remainder=True)
+    .shuffle(buffer_size=1500)
+    .repeat()
+    .batch(_BATCH_SIZE)
+    .prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    .map(lambda image, label: (2 * image - 1, label))
 )
 
 print(f"total: {total}, label1: {label1}, label0: {label0}")
 
+train_ds = dataset.take(int(total / _BATCH_SIZE * 0.7))
 val_ds = dataset.take(int(total / _BATCH_SIZE * 0.3))
-train_ds = dataset.skip(int(total / _BATCH_SIZE * 0.3))
 
-_EPOCHS = 5
+_EPOCHS = 20
 
 print("batching...")
 
@@ -116,9 +119,15 @@ initial_weights = os.path.join(tempfile.mkdtemp(), "initial_weights")
 class_weight = {0: (1 / label0) * (total) / 2, 1: (1 / label1) * (total) / 2}
 print(class_weight)
 
+steps_per_epoch = int(total / _BATCH_SIZE)
+
 print("fitting")
 history = model.fit(
-    train_ds, validation_data=val_ds, epochs=_EPOCHS, class_weight=class_weight
+    train_ds,
+    validation_data=val_ds,
+    epochs=_EPOCHS,
+    class_weight=class_weight,
+    steps_per_epoch=steps_per_epoch,
 )
 
 model.save_weights(initial_weights)
