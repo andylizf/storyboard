@@ -1,3 +1,0 @@
-[submodule "flownet2"]
-	path = flownet2
-	url = git@github.com:andylizf/flownet2-pytorch.git
