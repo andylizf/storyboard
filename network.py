@@ -3,20 +3,6 @@ from tensorflow.keras.layers import *
 from tensorflow.keras.metrics import *
 import tensorflow_addons as tfa
 
-METRICS = [
-    tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name="mcc"),
-    TruePositives(name="tp"),
-    FalsePositives(name="fp"),
-    TrueNegatives(name="tn"),
-    FalseNegatives(name="fn"),
-    "acc",
-    Precision(name="precision"),
-    Recall(name="recall"),
-    AUC(name="auc"),
-    AUC(name="prc", curve="PR"),  # precision-recall curve
-]
-
-
 WIDTH = 224
 HEIGHT = 224
 LENGTH = 2
@@ -76,7 +62,7 @@ def make_model(output_bias=None):
     model.compile(
         optimizer="adam",
         loss="binary_crossentropy",
-        metrics=METRICS,
+        metrics="acc",
     )
 
     return model
