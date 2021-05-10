@@ -48,30 +48,34 @@ def gen_ds(proj):
     loc_labels = []
     sequences = np.split(loc_paths, cut[1:])
     for sequence in sequences:
-        for i in range(0, len(sequence), 2):
-            j = i + 1
-            if j == len(sequence):
+        for i in range(0, len(sequence), LENGTH):
+            if i + LENGTH > len(sequence):
                 break
-            loc_images.append([loc_paths[i], loc_paths[j]])
+            loc_images.append(loc_paths[i : i + LENGTH])
             loc_labels.append(0)
 
     for i in range(0, len(sequences)):
         j = i + 1
-        if j == len(sequences):
+        if (
+            j == len(sequences)
+            or len(sequences[i]) - DELTA <= 0
+            or len(sequences[j]) - DELTA <= 0
+        ):
             break
-        loc_images.append([sequences[i][-1], sequences[j][0]])
+        loc_images.append([*sequences[i][-DELTA:0], *sequences[j][0:DELTA]])
         loc_labels.append(1)
 
     for i in range(loc_labels.count(0) - loc_labels.count(1)):
         j = randint(len(sequences))
         k = randint(len(sequences))
-        while k == j:
+        while (
+            j == k or len(sequences[j]) - DELTA <= 0 or len(sequences[k]) - DELTA <= 0
+        ):
+            j = randint(len(sequences))
             k = randint(len(sequences))
-        m = randint(len(sequences[j]))
-        n = randint(len(sequences[k]))
-        path1 = sequences[j][m]
-        path2 = sequences[k][n]
-        loc_images.append([path1, path2])
+        m = randint(len(sequences[j]) - DELTA)
+        n = randint(len(sequences[k]) - DELTA)
+        loc_images.append([*sequences[j][m : m + DELTA], *sequences[k][n : n + DELTA]])
         loc_labels.append(1)
 
     loc_total = len(loc_labels)
@@ -85,7 +89,7 @@ def gen_ds(proj):
 
 
 threads = []
-for proj in datas[3:12]:
+for proj in datas[5:8]:
     print("path", proj.path)
     t = Thread(target=gen_ds, args=(proj,), name=proj.path.name)
     threads.append(t)
@@ -104,11 +108,13 @@ dataset = (
     tf.data.Dataset.zip((path_ds, label_ds))
     .shuffle(buffer_size=total, reshuffle_each_iteration=True)
     .repeat()
-    .map(
-        lambda paths, label: (
-            tf.convert_to_tensor((to_image(paths[0]), to_image(paths[1]))),
-            label,
-        )
+)
+print(dataset)
+
+dataset = dataset.map(
+    lambda path, label: (
+        tf.convert_to_tensor(tf.map_fn(to_image, path, fn_output_signature=tf.float32)),
+        label,
     )
 )
 
@@ -116,13 +122,11 @@ dataset = (
 def test(cnt):
     plt.figure(figsize=(10, 10))
     i = 0
-    for ((image1, image2), label) in dataset.take(cnt):
-        ax = plt.subplot(1, 2, 1)
-        plt.imshow(image1.numpy().astype("uint8"))
-        plt.axis("off")
-        ax = plt.subplot(1, 2, 2)
-        plt.imshow(image2.numpy().astype("uint8"))
-        plt.axis("off")
+    for (images, label) in dataset.take(cnt):
+        for j in range(LENGTH):
+            ax = plt.subplot(1, LENGTH, j)
+            plt.imshow(images[j].numpy().astype("uint8"))
+            plt.axis("off")
         plt.suptitle(f"label{int(label)}")
         plt.savefig(f"test{i}.jpg")
         i += 1
@@ -135,7 +139,7 @@ _BATCH_SIZE = 2
 dataset = (
     dataset.map(
         lambda images, label: (
-            tf.convert_to_tensor((images[0] / 255.0, images[1] / 255.0)),
+            tf.convert_to_tensor(tf.map_fn(lambda image: image / 255.0, images)),
             label,
         )
     )
