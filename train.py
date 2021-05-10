@@ -10,12 +10,11 @@ if len(physical_devices) > 0:
 
 import tempfile
 from network import *
-from preprocess import DataProject, datas
+from preprocess import datas
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import randint
 from threading import Thread, Lock, currentThread
-from tensorflow.math import argmax
 
 
 def to_image(path):
@@ -86,7 +85,8 @@ def gen_ds(proj):
 
 
 threads = []
-for proj in datas:
+for proj in datas[3:12]:
+    print("path", proj.path)
     t = Thread(target=gen_ds, args=(proj,), name=proj.path.name)
     threads.append(t)
     t.start()
@@ -145,7 +145,7 @@ dataset = (
 
 print(dataset)
 
-_EPOCHS = 20
+_EPOCHS = 5
 
 print("batching...")
 

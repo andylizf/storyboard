@@ -18,26 +18,16 @@ class DataProject:
 
     def calc(self):
         self.frames = self.path / "frames"
-        self.flows = self.path / "flows"
 
-        if not self.flows.is_dir():
-            self.flows.mkdir()
-        if empty_dir(self.flows):
-            if not self.frames.is_dir():
-                self.frames.mkdir()
-            if empty_dir(self.frames):
-                os.system(
-                    f'ffmpeg -i {self.video} -s {WIDTH}*{HEIGHT} -start_number 0 {self.frames / "%6d.jpg"} > {(self.path / "frames.log").resolve()}'
-                )
-
+        if not self.frames.is_dir():
+            self.frames.mkdir()
+        if empty_dir(self.frames):
             os.system(
-                f'python3 flownet2/main.py --save {self.flows.resolve()} --inference --inference_visualize --save_flow\
- --inference_dataset ImagesFromFolder --inference_dataset_root {self.frames.resolve()}\
- --resume FlowNet2_checkpoint.pth.tar --model FlowNet2 > {(self.path / "flows.log").resolve()}'
+                f'ffmpeg -i {self.video} -s {WIDTH}*{HEIGHT} -start_number 0 {self.frames / "%6d.jpg"} > {(self.path / "frames.log").resolve()}'
             )
 
     def __str__(self):
         return f"{{path: {self.path}, video: {self.video}, txt: {self.txt}}}"
 
 
-datas = [DataProject(x) for x in Path("data/").iterdir() if x.is_dir()]
+datas = [DataProject(x) for x in sorted(Path("data/").iterdir()) if x.is_dir()]
