@@ -5,7 +5,7 @@ import tensorflow_addons as tfa
 
 WIDTH = 224
 HEIGHT = 224
-DELTA = 3
+DELTA = 1
 LENGTH = DELTA * 2
 SHAPE = [LENGTH, WIDTH, HEIGHT, 3]
 

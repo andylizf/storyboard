@@ -51,30 +51,31 @@ def gen_ds(proj):
         for i in range(0, len(sequence), LENGTH):
             if i + LENGTH > len(sequence):
                 break
+            assert len(loc_paths[i : i + LENGTH]) == LENGTH
             loc_images.append(loc_paths[i : i + LENGTH])
             loc_labels.append(0)
 
     for i in range(0, len(sequences)):
         j = i + 1
-        if (
-            j == len(sequences)
-            or len(sequences[i]) - DELTA <= 0
-            or len(sequences[j]) - DELTA <= 0
-        ):
+        if j == len(sequences):
             break
-        loc_images.append([*sequences[i][-DELTA:0], *sequences[j][0:DELTA]])
+        if len(sequences[i]) < DELTA or len(sequences[j]) < DELTA:
+            continue
+        assert len([*sequences[i][-DELTA:], *sequences[j][:DELTA]]) == LENGTH
+        loc_images.append([*sequences[i][-DELTA:], *sequences[j][:DELTA]])
         loc_labels.append(1)
 
     for i in range(loc_labels.count(0) - loc_labels.count(1)):
         j = randint(len(sequences))
         k = randint(len(sequences))
-        while (
-            j == k or len(sequences[j]) - DELTA <= 0 or len(sequences[k]) - DELTA <= 0
-        ):
+        while j == k or len(sequences[j]) < DELTA or len(sequences[k]) < DELTA:
             j = randint(len(sequences))
             k = randint(len(sequences))
         m = randint(len(sequences[j]) - DELTA)
         n = randint(len(sequences[k]) - DELTA)
+        assert (
+            len([*sequences[j][m : m + DELTA], *sequences[k][n : n + DELTA]]) == LENGTH
+        )
         loc_images.append([*sequences[j][m : m + DELTA], *sequences[k][n : n + DELTA]])
         loc_labels.append(1)
 
@@ -89,8 +90,7 @@ def gen_ds(proj):
 
 
 threads = []
-for proj in datas[5:8]:
-    print("path", proj.path)
+for proj in datas[5:6]:
     t = Thread(target=gen_ds, args=(proj,), name=proj.path.name)
     threads.append(t)
     t.start()
@@ -109,7 +109,6 @@ dataset = (
     .shuffle(buffer_size=total, reshuffle_each_iteration=True)
     .repeat()
 )
-print(dataset)
 
 dataset = dataset.map(
     lambda path, label: (
@@ -132,7 +131,7 @@ def test(cnt):
         i += 1
 
 
-# test(40)
+test(40)
 
 _BATCH_SIZE = 2
 
@@ -146,8 +145,6 @@ dataset = (
     .prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     .batch(_BATCH_SIZE, drop_remainder=True)
 )
-
-print(dataset)
 
 _EPOCHS = 5
 
@@ -165,7 +162,7 @@ train_steps = int(steps * 0.7)
 val_steps = int(steps * 0.3)
 
 train_ds = dataset.take(train_steps * _EPOCHS)
-val_ds = dataset.take(train_steps * _EPOCHS)
+val_ds = dataset.take(val_steps * _EPOCHS)
 
 print(train_ds)
 print(val_ds)
